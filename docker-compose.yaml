@@ -2,8 +2,11 @@ x-spark-common: &spark-common
   image: bitnami/spark:latest
   volumes:
     - ./jobs:/opt/bitnami/spark/jobs
+  env_file:
+    - .env
   networks:
     - spark_flow
+
 services:
   spark-master:
     <<: *spark-common
@@ -19,21 +22,19 @@ services:
       - spark-master
     environment:
       SPARK_MODE: worker
-      SPARK_WORKER_CORES: 12
-      SPARK_WORKER_MEMORY: 16g
+      SPARK_WORKER_CORES: ${SPARK_WORKER_CORES}
+      SPARK_WORKER_MEMORY: ${SPARK_WORKER_MEMORY}
       SPARK_MASTER_URL: spark://spark-master:7077
       PYSPARK_PYTHON: python3
       PYSPARK_DRIVER_PYTHON: python3
       HADOOP_CONF_DIR: /opt/hadoop/etc/hadoop
       YARN_CONF_DIR: /opt/hadoop/etc/hadoop
-    
+
   mysql:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: root_password
-      MYSQL_DATABASE: airflow
-      MYSQL_USER: airflow
-      MYSQL_PASSWORD: airflow_password
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}  # Defina a senha do root aqui
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
     ports:
       - "3306:3306"
     networks:
@@ -45,6 +46,7 @@ services:
     depends_on:
       - spark-master
       - spark-worker
+
 networks:
   spark_flow:
     driver: bridge

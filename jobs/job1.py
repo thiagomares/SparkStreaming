@@ -1,14 +1,26 @@
+import os
 from pyspark.sql import SparkSession
 
+# Obtenha as variáveis de ambiente para configurar a sessão do Spark e o MySQL
+access_key = os.environ.get("AWS_ACCESS_KEY_ID")
+secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
+s3_endpoint = os.environ.get("S3_ENDPOINT")
+bucket_name = os.environ.get("S3_BUCKET_NAME")
+file_key = os.environ.get("S3_FILE_KEY")
+url_mysql = os.environ.get("MYSQL_URL")
+tabela = os.environ.get("MYSQL_TABLE")
+usuario = os.environ.get("MYSQL_USER")
+senha = os.environ.get("MYSQL_PASSWORD")
+
+
 spark = SparkSession.builder.appName("job1") \
-    .config("spark.hadoop.fs.s3a.access.key", "AKIAZI2LDILVTCRC5Y5I") \
-    .config("spark.hadoop.fs.s3a.secret.key", "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") \
-    .config("spark.hadoop.fs.s3a.endpoint", "ss3.sa-east-1.amazonaws.com") \
+    .config("spark.hadoop.fs.s3a.access.key", access_key) \
+    .config("spark.hadoop.fs.s3a.secret.key", secret_key) \
+    .config("spark.hadoop.fs.s3a.endpoint", s3_endpoint) \
     .getOrCreate()
-    
-bucket_name = 'bucketestudosengdados'
-file_key = 'mes/dia/hora/13/'
+
 s3_path = f's3a://{bucket_name}/{file_key}'
+
 
 df_streaming = spark.readStream \
     .format("csv") \
@@ -16,12 +28,6 @@ df_streaming = spark.readStream \
     .option("inferSchema", "true") \
     .load(s3_path)
 
-url_mysql = "jdbc:mysql://mysql:3306/airflow"
-tabela = "dados"
-usuario = "root"
-senha = "root_password"
-
-# Escreva o stream para o MySQL
 query = df_streaming.writeStream \
     .outputMode("append") \
     .foreachBatch(lambda df, epochId: df.write \
