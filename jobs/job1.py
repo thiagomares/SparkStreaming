@@ -1,44 +1,37 @@
 import os
 from pyspark.sql import SparkSession
+from pyspark.sql.types import StructType, StructField, IntegerType, DateType, FloatType
 
-# Obtenha as variáveis de ambiente para configurar a sessão do Spark e o MySQL
-access_key = os.environ.get("AWS_ACCESS_KEY_ID")
-secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
-s3_endpoint = os.environ.get("S3_ENDPOINT")
-bucket_name = os.environ.get("S3_BUCKET_NAME")
-file_key = os.environ.get("S3_FILE_KEY")
+# Configura as variáveis para conexão MySQL
 url_mysql = os.environ.get("MYSQL_URL")
 tabela = os.environ.get("MYSQL_TABLE")
 usuario = os.environ.get("MYSQL_USER")
 senha = os.environ.get("MYSQL_PASSWORD")
 
+# Diretório onde estão armazenados os arquivos CSV
+directory_path = "dados"  # Certifique-se de que seja o caminho relativo ou absoluto para sua pasta "dados"
 
-spark = SparkSession.builder.appName("job1") \
-    .config("spark.hadoop.fs.s3a.access.key", access_key) \
-    .config("spark.hadoop.fs.s3a.secret.key", secret_key) \
-    .config("spark.hadoop.fs.s3a.endpoint", s3_endpoint) \
-    .getOrCreate()
+# Cria a sessão Spark
+spark = SparkSession.builder.appName("job1").getOrCreate()
 
-s3_path = f's3a://{bucket_name}/{file_key}'
+schema = StructType([
+    StructField("IDVenda", IntegerType(), True),      # IDVenda como inteiro
+    StructField("IDVendedor", IntegerType(), True),   # IDVendedor como inteiro
+    StructField("IDCliente", IntegerType(), True),    # IDCliente como inteiro
+    StructField("Data", DateType(), True),            # Data como tipo Date
+    StructField("Total", FloatType(), True)           # Total como tipo Float
+])
 
+# Lê os arquivos CSV de forma contínua (streaming)
+df = spark.readStream.option('sep', ';').option('header', 'false').schema(schema).csv(directory_path)
 
-df_streaming = spark.readStream \
-    .format("csv") \
-    .option("header", "true") \
-    .option("inferSchema", "true") \
-    .load(s3_path)
-
-query = df_streaming.writeStream \
+# Escreve o DataFrame no formato Parquet na mesma pasta onde os CSV estão
+query = df.writeStream \
     .outputMode("append") \
-    .foreachBatch(lambda df, epochId: df.write \
-        .format("jdbc") \
-        .option("url", url_mysql) \
-        .option("dbtable", tabela) \
-        .option("user", usuario) \
-        .option("password", senha) \
-        .option("driver", "com.mysql.cj.jdbc.Driver") \
-        .mode("append") \
-        .save()) \
+    .format("parquet") \
+    .option("path", directory_path + "/parquet_output") \
+    .option("checkpointLocation", directory_path + "/checkpoint_parquet") \
     .start()
 
+# Espera o término do stream
 query.awaitTermination()

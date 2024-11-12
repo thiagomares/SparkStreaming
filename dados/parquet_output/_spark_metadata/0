@@ -1,0 +1,2 @@
+v1
+{"path":"file:///opt/bitnami/spark/work/app-20241112022849-0001/0/dados/parquet_output/part-00000-1eeab41e-a65b-463a-8ded-dca2f58f8e82-c000.snappy.parquet","size":5865,"isDir":false,"modificationTime":1731378536370,"blockReplication":1,"blockSize":33554432,"action":"add"}

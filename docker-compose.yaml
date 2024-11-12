@@ -2,6 +2,7 @@ x-spark-common: &spark-common
   image: bitnami/spark:latest
   volumes:
     - ./jobs:/opt/bitnami/spark/jobs
+    - ./dados:/opt/bitnami/spark/dados
   env_file:
     - .env
   networks:
