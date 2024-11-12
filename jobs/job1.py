@@ -2,11 +2,6 @@ import os
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, IntegerType, DateType, FloatType
 
-url_mysql = os.environ.get("MYSQL_URL")
-tabela = os.environ.get("MYSQL_TABLE")
-usuario = os.environ.get("MYSQL_USER")
-senha = os.environ.get("MYSQL_PASSWORD")
-
 directory_path = "dados"
 
 spark = SparkSession.builder.appName("job1").getOrCreate()
